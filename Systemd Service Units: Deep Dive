@@ -1,0 +1,75 @@
+# Systemd Service Units: Deep Dive
+
+## 1. What are Service Units?
+
+* Service units are the systemd equivalent of SysV init scripts.
+* They configure and manage background services (daemons).
+* Examples: Web servers (Apache), SSH servers, mail servers, system services.
+
+## 2. Service Unit File Structure
+
+Service unit files are divided into three sections:
+
+* **[Unit]:** General settings applicable to all unit types.
+    * `Description`: Human-readable description of the service (used by `systemctl status`).
+    * `After`: Defines dependencies; service starts *after* these targets/units are active.  (Targets are like runlevels - more on this later)
+    * `Documentation`: Links to documentation.
+* **[Service]:** Settings specific to service units.
+    * `Type`: Service startup type (e.g., `forking`, `notify`).
+        * `forking`: Parent process exits, child process continues (traditional Unix behavior).
+        * `notify`: Service sends a notification when startup is complete.
+    * `Environment`: Sets environment variables for the service.
+    * `ExecStart`, `ExecStop`, `ExecReload`: Commands to start, stop, and reload the service.
+    * `PrivateTmp`: Uses a private `/tmp` directory for enhanced security.
+    * `Restart`: When to restart the service (e.g., `on-abort`, `on-failure`).
+    * `EnvironmentFile`: Reads environment variables from a file. `-` before the filename means "don't worry if the file is missing".
+    * `ExecStartPre`: Command to run *before* `ExecStart`.
+    * `KillMode`: How to kill service processes (e.g., `process`, `control-group`). `process` only kills the main process.
+    * `RestartPreventExitStatus`: Prevents restarts on specific exit codes.
+    * `RuntimeDirectory`, `RuntimeDirectoryMode`: Creates and sets permissions on a runtime directory (usually under `/run`).
+    * `AmbientCapabilities`, `CapabilityBoundingSet`:  Manage kernel capabilities (for security).
+    * `LockPersonality`: Security setting.
+    * `MemoryDenyWriteExecute`: Security setting.
+    * `ProtectSystem`: Security setting.
+    * `RestrictAddressFamilies`: Security setting.
+    * `RestrictNamespaces`: Security setting.
+    * `RestrictRealtime`: Security setting.
+    * `RestrictSUIDSGID`: Security setting.
+    * `SystemCallArchitectures`: Security setting.
+    * `SystemCallErrorNumber`: Security setting.
+    * `SystemCallFilter`: Security setting.
+    * `User`: Runs the service under a specific user.
+    * `WatchdogSec`: Enables a watchdog timer to restart the service if it hangs.
+* **[Install]:** Controls how the service is enabled/disabled.
+    * `WantedBy`: Specifies which target the service should be part of (e.g., `multi-user.target` for normal boot).
+    * `Alias`: Alternative names for the service.
+
+## 3. Key Commands
+
+* `man systemd.directives`: Index of all systemd directives and their man pages.
+* `man systemd.unit`: Man page for general unit options (the `[Unit]` section).
+* `man systemd.service`: Man page for service-specific options (the `[Service]` section).
+* `man capabilities`: Man page for Linux kernel capabilities.
+* `systemctl status <service>`: Shows status information about a service.
+* `systemctl start <service>`: Starts a service.
+* `systemctl stop <service>`: Stops a service.
+* `systemctl restart <service>`: Restarts a service.
+* `systemctl reload <service>`: Reloads a service's configuration.
+* `systemctl enable <service>`: Enables a service to start at boot.
+* `systemctl disable <service>`: Disables a service from starting at boot.
+* `ps aux | grep <service_name>`: Find the process ID of a service.
+
+## 4. Understanding the Apache, SSH, and timesyncd Examples
+
+The notes provide detailed examples of the Apache (`apache2.service`), SSH (`ssh.service`), and timesyncd (`systemd-timesyncd.service`) unit files, 
+highlighting the specific directives used in each and explaining their purpose.  Refer to the original text for the detailed explanations of each directive within these example files.
+
+## 5. Important Notes
+
+* You don't need `sudo` to *view* service information.
+* You *do* need `sudo` to *manage* services (start, stop, enable, disable).
+* You don't need to include the `.service` extension when using `systemctl`.
+* `systemctl status` gives more detailed information than `systemctl is-active`.
+
+This revised structure should be much easier to read and use for your GitHub notes.  It breaks down the information into logical sections and highlights the most important points. 
+Remember to refer back to the original text for the specific details of the Apache, SSH, and timesyncd examples.
