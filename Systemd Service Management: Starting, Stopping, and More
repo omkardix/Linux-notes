@@ -1,0 +1,82 @@
+# Systemd Service Management: Starting, Stopping, and More
+
+## 1. Starting Services
+
+* `sudo systemctl start <service>`: Starts the specified service.
+* Example: `sudo systemctl start httpd`
+
+## 2. Checking Service Status
+
+* `sudo systemctl status <service>`: Shows detailed information about a service.
+    * Active/Inactive: Current state of the service.
+    * Enabled/Disabled: Whether the service starts at boot.
+* `ps aux | grep <service>`: Lists processes associated with the service (useful for seeing child processes).
+
+## 3. Stopping Services
+
+* `sudo systemctl stop <service>`: Stops the specified service.
+
+## 4. Reloading Services
+
+* `sudo systemctl reload <service>`: Reloads the service's configuration *without* restarting it (if supported).  Useful for configuration changes that don't require a full restart.
+* `sudo systemctl restart <service>`: Restarts the service, which also reloads the configuration.  Use this if `reload` isn't sufficient.
+* Check the service's documentation to see if `reload` is supported and what types of changes it handles.
+
+## 5. Service File Configuration for Reloading
+
+* `ExecReload`: Specifies the command to reload the service's configuration.
+* If a service doesn't have a specific reload command, `systemd` often uses `kill -HUP $MAINPID` to send a "hangup" signal, which many services interpret as a request to reload.
+
+## 6. Enabling and Disabling Services (Corrected and Enhanced)
+
+* `sudo systemctl enable <service>`: Creates a symbolic link so the service starts at boot.
+
+    * **Demonstration:**
+    ```bash
+    sudo systemctl enable httpd
+    Created symlink /etc/systemd/system/multi-user.target.wants/httpd.service → /usr/lib/systemd/system/httpd.service.
+    ls -l /etc/systemd/system/multi-user.target.wants/httpd.service  # Verify the link
+    ```
+    * Explanation: This command creates a symbolic link named `httpd.service` *within* the `/etc/systemd/system/multi-user.target.wants/` directory. This link *points back* to the actual service file, which is usually located in `/usr/lib/systemd/system/` (or sometimes `/lib/systemd/system/` – the system often uses symbolic links to make these equivalent).  The `multi-user.target` part means the service will be started when the system reaches the multi-user state (normal operating mode).
+
+* `sudo systemctl disable <service>`: Removes the symbolic link, preventing the service from starting at boot.
+
+    * **Demonstration:**
+    ```bash
+    sudo systemctl disable httpd
+    Removed /etc/systemd/system/multi-user.target.wants/httpd.service.
+    ls -l /etc/systemd/system/multi-user.target.wants/httpd.service # Verify it's gone
+    ```
+    * Explanation:  This command removes the symbolic link from the `multi-user.target.wants` directory.  Because the link is gone, the service will no longer be started at boot.
+
+* `sudo systemctl enable --now <service>`: Enables and starts the service immediately.
+
+* `sudo systemctl disable --now <service>`: Disables and stops the service immediately.
+
+* `systemctl is-enabled <service>`: Checks if a service is enabled (checks for the existence of the symbolic link).
+
+* `systemctl is-active <service>`: Checks if a service is currently running.
+
+## 7. Refusing Manual Control
+
+* `RefuseManualStop=yes`: In the `[Unit]` section of a service file, prevents manual `systemctl stop` and `systemctl restart`. 
+However, some services may still allow stopping/restarting through other means (e.g., the `service` command on some systems).
+
+## 8. Killing Services
+
+* `sudo systemctl kill <service>`: Sends a `SIGTERM` (terminate) signal to the service, allowing it to shut down gracefully.
+* `sudo systemctl kill -s <signal> <service>`: Sends a specific signal to the service.  For example, `sudo systemctl kill -s SIGKILL <service>` sends `SIGKILL` (kill - force immediate termination).
+* **Important:** Systemd manages killing *all* processes associated with a service, including child processes.  This is a major improvement over older init systems.
+* `Restart=on-abort`: In the `[Service]` section, automatically restarts a service if it is killed with an "unclean" signal (like `SIGKILL`).
+* `KillSignal`: In the `[Service]` section, changes the default kill signal.
+* `KillMode`: In the `[Service]` section, controls how processes are killed (e.g., `mixed` sends different signals to different processes).
+
+## 9. Masking Services
+
+* `sudo systemctl mask <service>`: Creates a symbolic link to `/dev/null`, completely preventing the service from being started (manually or automatically).
+* `sudo systemctl unmask <service>`: Reverses the masking, allowing the service to be started.
+
+## 10. Distribution-Specific Notes
+
+* Service names and configurations can vary slightly between Linux distributions (e.g., `httpd` vs. `apache2`).
+* Default service states (enabled/disabled) can also differ.
